@@ -97,6 +97,7 @@ button {
 
 }
     </style>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 <body>
     <h1 style="font-size: 50px;">CAPTAIN</h1>
@@ -118,7 +119,7 @@ button {
     </div>
 
     <!-- Add this script block to your HTML file -->
-    <script>
+     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const listenBtn = document.getElementById('listenBtn');
             const uploadBtn = document.getElementById('uploadBtn');
@@ -128,42 +129,52 @@ button {
             listenBtn.addEventListener('click', function() {
                 console.log('Listening...');
 
-                fetch('/start_listening')
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(data);
-                        // Display the status and response in the UI
-                        responseContainer.innerHTML = `<p>Status: ${data.status}</p><p>Response: ${data.response || 'No response'}</p>`;
+                const recognition = new webkitSpeechRecognition();
+                recognition.lang = 'en-US';
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    console.log('Transcript:', transcript);
+
+                    // Send the audio data to the server for processing
+                    $.ajax({
+                        url: '/process_audio',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ audio_data: transcript }),
+                        success: function(data) {
+                            console.log(data);
+                            // Display the server's response in the UI
+                            responseContainer.innerHTML = `<p>Captain: ${data.response || 'No response'}</p>`;
+                        },
+                        error: function(error) {
+                            console.error('Error:', error);
+                        }
                     });
-            });
+                };
 
-            // Trigger file input when the upload button is clicked
-            uploadBtn.addEventListener('click', function() {
-                document.getElementById('file').click();
-            });
-
-            // Submit the form when a file is chosen
-            document.getElementById('file').addEventListener('change', function() {
-                uploadForm.submit();
+                recognition.start();
             });
         });
 
-            // Function to trigger the script via AJAX
-    function runScript() {
-        // Make an AJAX request to the server
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/run_script', true);
 
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                responseContainer.innerHTML = xhr.responseText;
-            } else {
-                alert('Failed to run the script.');
-            }
-        };
 
-        xhr.send();
-    }
+        // Function to trigger the script via AJAX
+        function runScript() {
+            // Make an AJAX request to the server
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/run_script', true);
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    responseContainer.innerHTML = xhr.responseText;
+                } else {
+                    alert('Failed to run the script.');
+                }
+            };
+
+            xhr.send();
+        }
     </script>
 </body>
 </html>

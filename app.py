@@ -227,21 +227,21 @@ def upload_file():
 
         return 'File uploaded and processed successfully'
     
-
-@app.route('/start_listening', methods=['GET'])
-def start_listening_route():
-    global listening_thread, listening_response
-    if listening_thread is None:
-        listening_thread = threading.Thread(target=start_listening)
-        listening_thread.start()
-        listening_thread.join()  # Wait for the listening thread to finish
-        response = {'status': 'Listening finished', 'response': listening_response}
-        listening_thread = None
-        listening_response = None
+@app.route('/process_audio', methods=['POST'])
+def process_audio():
+    try:
+        data = request.get_json()
+        audio_data = data.get('audio_data', '')
+        print(audio_data)
+        # Process the audio data (replace this with your actual processing logic)
+        response = get_answer(audio_data)
         print(response)
-        return jsonify(response)
-    else:
-        return jsonify({'status': 'Already listening', 'response': None})
+        say(response)
+
+        return jsonify({'response': response})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 
 
 
