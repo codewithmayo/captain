@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, jsonify
 from concurrent.futures import ThreadPoolExecutor
 from openai.embeddings_utils import get_embedding
 from openai.embeddings_utils import cosine_similarity
@@ -8,8 +8,6 @@ import time
 import openai
 import os
 import PyPDF2
-import speech_recognition as sr
-import threading
 import numpy as np
 import pygame, requests
 import queue
@@ -107,29 +105,7 @@ def say(text):
 
 
 
-def start_listening():
-    global listening_thread, listening_response
-    recognizer = sr.Recognizer()
-    microphone = sr.Microphone()
 
-    with microphone as source:
-        recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.listen(source)
-
-    try:
-        query = recognizer.recognize_google(audio)
-        print("You said:", query)
-        listening_response = get_answer(query)
-        print(listening_response)
-        say(listening_response)
-        # Send the recognized text to the frontend or perform further processing
-    except sr.UnknownValueError:
-        print("Could not understand audio")
-    except sr.RequestError as e:
-        print(f"Error with the speech recognition service: {e}")
-
-    # Reset the listening thread and response
-    listening_thread = None
     
 
 def process_chunk(chunk_text):
