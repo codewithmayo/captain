@@ -119,45 +119,45 @@ button {
     </div>
 
     <!-- Add this script block to your HTML file -->
-     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const listenBtn = document.getElementById('listenBtn');
-            const uploadBtn = document.getElementById('uploadBtn');
-            const uploadForm = document.getElementById('uploadForm');
-            const responseContainer = document.getElementById('responseContainer');
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const listenBtn = document.getElementById('listenBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const responseContainer = document.getElementById('responseContainer');
 
-            listenBtn.addEventListener('click', function() {
-                console.log('Listening...');
+        listenBtn.addEventListener('click', function () {
+            console.log('Listening...');
 
-                const recognition = new webkitSpeechRecognition();
-                recognition.lang = 'en-US';
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
 
-                recognition.onresult = function(event) {
-                    const transcript = event.results[0][0].transcript;
-                    console.log('Transcript:', transcript);
+            recognition.onresult = function (event) {
+                const transcript = event.results[0][0].transcript;
+                console.log('Transcript:', transcript);
 
-                    // Send the audio data to the server for processing
-                    $.ajax({
-                        url: '/process_audio',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ audio_data: transcript }),
-                        success: function(data) {
-                            console.log(data);
-                            // Display the server's response in the UI
-                            responseContainer.innerHTML = `<p>Captain: ${data.response || 'No response'}</p>`;
-                        },
-                        error: function(error) {
-                            console.error('Error:', error);
-                        }
-                    });
-                };
+                // Send the audio data to the server for processing
+                $.ajax({
+                    url: '/process_audio',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ audio_data: transcript }),
+                    success: function (data) {
+                        console.log(data);
+                        // Display the server's response in the UI
+                        responseContainer.innerHTML = `<p>Captain: ${data.response || 'No response'}</p>`;
 
-                recognition.start();
-            });
+                        // Speak the response using the Web Speech API
+                        speakResponse(data.response);
+                    },
+                    error: function (error) {
+                        console.error('Error:', error);
+                    }
+                });
+            };
+
+            recognition.start();
         });
-
-
 
         // Function to trigger the script via AJAX
         function runScript() {
@@ -165,7 +165,7 @@ button {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', '/run_script', true);
 
-            xhr.onload = function() {
+            xhr.onload = function () {
                 if (xhr.status === 200) {
                     responseContainer.innerHTML = xhr.responseText;
                 } else {
@@ -175,6 +175,13 @@ button {
 
             xhr.send();
         }
-    </script>
+
+        function speakResponse(response) {
+            // Use the Web Speech API to speak the response
+            var msg = new SpeechSynthesisUtterance(response);
+            window.speechSynthesis.speak(msg);
+        }
+    });
+</script>
 </body>
 </html>
