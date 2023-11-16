@@ -71,7 +71,7 @@ def say(text):
     global stop_speaking_flag
 
     CHUNK_SIZE = 1024
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
 
     headers = {
         "Accept": "audio/mpeg",
@@ -88,7 +88,7 @@ def say(text):
         }
     }
 
-    response = requests.post(url, json=data, headers=headers)
+    response = requests.post(url, json=data, headers=headers, stream=True)
     with open('output.mp3', 'wb') as f:
         for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
             if chunk:
