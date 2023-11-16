@@ -6,10 +6,8 @@ plotly
 matplotlib
 pypdf2
 numpy
-speechrecognition
 requests
 gunicorn
 pandas
 scipy
 scikit-learn
-PyAudio
