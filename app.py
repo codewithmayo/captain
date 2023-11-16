@@ -11,10 +11,10 @@ import PyPDF2
 import numpy as np
 import pygame, requests
 import queue
-from dotenv import load_dotenv
-
-
-load_dotenv()
+# from dotenv import load_dotenv
+#
+#
+# load_dotenv()
 
 
 app = Flask(__name__)
