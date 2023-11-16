@@ -1,0 +1,4 @@
+http://13.212.190.198 {
+    reverse_proxy localhost:8000
+
+}
