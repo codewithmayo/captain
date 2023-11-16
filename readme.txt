@@ -1,8 +1,4 @@
     
-   app.py is your main file which is basically your backend.Don't change anything in this file until its very important   
-    
-    
-    
     
                         CHANGING THE API KEYS and Voices
 
