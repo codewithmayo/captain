@@ -1,19 +1,19 @@
-from flask import Flask, render_template, request, jsonify
-from concurrent.futures import ThreadPoolExecutor
-from openai.embeddings_utils import get_embedding
-from openai.embeddings_utils import cosine_similarity
-import uuid
+import asyncio
 import json
-import time
-import openai
 import os
+import queue
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
+
 import PyPDF2
 import numpy as np
-import pygame, requests
-import queue
-import asyncio
-import time
-
+import openai
+import pygame
+import requests
+from flask import Flask, render_template, request, jsonify
+from openai.embeddings_utils import cosine_similarity
+from openai.embeddings_utils import get_embedding
 
 app = Flask(__name__)
 
