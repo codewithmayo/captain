@@ -208,6 +208,32 @@ function speakResponseWithElevenLabs(response_text) {
     });
 }
     });
+
+    // Trigger file input when the upload button is clicked
+    uploadBtn.addEventListener('click', function () {
+        document.getElementById('file').click();
+    });
+
+          // Submit the form when a file is chosen
+    document.getElementById('file').addEventListener('change', function () {
+        uploadForm.submit();
+    });
+
+      function runScript() {
+        // Make an AJAX request to the server
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/run_script', true);
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                responseContainer.innerHTML = xhr.responseText;
+            } else {
+                alert('Failed to run the script.');
+            }
+        };
+
+        xhr.send();
+    }
 </script>
 </body>
 </html>
