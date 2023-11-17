@@ -1,3 +1,4 @@
+flask[async]
 openai==0.27.7
 flask
 pygame
@@ -11,4 +12,4 @@ gunicorn
 pandas
 scipy
 scikit-learn
-Flask[async]
+
