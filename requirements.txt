@@ -11,3 +11,4 @@ gunicorn
 pandas
 scipy
 scikit-learn
+Flask[async]
