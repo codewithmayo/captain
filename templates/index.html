@@ -96,12 +96,24 @@ button {
     top: 60%;
 
 }
+
+    #status {
+        color: #FFCC00; /* Yellow color for status */
+        margin-top: 10px;
+        font-size: 20px;
+        margin-bottom: 20px; /* Add margin to the bottom */
+        padding-left: 20px;
+        left: 10%;
+        margin-bottom: 5%;
+
+    }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 <body>
     <h1 style="font-size: 50px;">CAPTAIN</h1>
     <p>A custom AI that can provide answers from a specific data using voice</p>
+    <div id="status">Not Listening</div> <!-- Status indicator -->
     <div id="uploadContainer">
         <button id="uploadBtn">Upload PDF</button>
         <button class="voicesbtn" onclick="runScript()">Get Voices</button>
@@ -119,46 +131,69 @@ button {
     </div>
 
     <!-- Add this script block to your HTML file -->
+</body>
+</html>
+
+
+
+
+
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const listenBtn = document.getElementById('listenBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const uploadForm = document.getElementById('uploadForm');
-        const responseContainer = document.getElementById('responseContainer');
-        listenBtn.addEventListener('click', function () {
-            console.log('Listening...');
+        document.addEventListener('DOMContentLoaded', function () {
+            const listenBtn = document.getElementById('listenBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadForm = document.getElementById('uploadForm');
+            const responseContainer = document.getElementById('responseContainer');
+            const statusElement = document.getElementById('status'); // Status element
 
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = 'en-US';
+            let isListening = false;
 
-            recognition.onresult = function (event) {
-                const transcript = event.results[0][0].transcript;
-                console.log('Transcript:', transcript);
+            listenBtn.addEventListener('click', function () {
+                console.log('Listening...');
 
-                // Send the audio data to the server for processing
-                $.ajax({
-                    url: '/process_audio',
-                    type: 'POST',
-                    contentType: 'application/json',  // Set content type to JSON
-                    data: JSON.stringify({audio_data: transcript}),  // Send the transcript as the data
-                    success: function (data) {
-                        console.log(data);
-                        // Display the server's response in the UI
-                        speakResponseWithElevenLabs(data.response)
-                        responseContainer.innerHTML = `<p>Captain: ${data.response || 'No response'}</p>`;
+                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.lang = 'en-US';
 
-                    },
-                    error: function (error) {
-                        console.error('Error:', error);
+                recognition.onstart = function () {
+                    isListening = true;
+                    updateStatus(); // Update status when listening starts
+                };
 
-                    }
-                });
+                recognition.onend = function () {
+                    isListening = false;
+                    updateStatus(); // Update status when listening ends
+                };
 
-            };
+                recognition.onresult = function (event) {
+                    const transcript = event.results[0][0].transcript;
+                    console.log('Transcript:', transcript);
 
-            recognition.start();
-        });
+                    // Send the audio data to the server for processing
+                    $.ajax({
+                        url: '/process_audio',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ audio_data: transcript }),
+                        success: function (data) {
+                            console.log(data);
 
+                            // Display the server's response in the UI
+                            speakResponseWithElevenLabs(data.response);
+                            responseContainer.innerHTML = `<p>Captain: ${data.response || 'No response'}</p>`;
+                        },
+                        error: function (error) {
+                            console.error('Error:', error);
+                        }
+                    });
+                };
+
+                recognition.start();
+            });
+
+            function updateStatus() {
+                statusElement.innerText = isListening ? 'Listening' : 'Not Listening';
+            }
         // Function to trigger the script via AJAX
         function runScript() {
             // Make an AJAX request to the server
@@ -235,5 +270,3 @@ function speakResponseWithElevenLabs(response_text) {
         xhr.send();
     }
 </script>
-</body>
-</html>
