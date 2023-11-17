@@ -11,11 +11,8 @@ import PyPDF2
 import numpy as np
 import pygame, requests
 import queue
-
-# from dotenv import load_dotenv
-#
-#
-# load_dotenv()
+import asyncio
+import time
 
 
 app = Flask(__name__)
@@ -43,34 +40,50 @@ def get_context(inputPrompt, top_k):
 
         sorted_data = sorted(data, key=lambda x: x['similarities'], reverse=True)
         context = ''
-        referencs = []
         for i in sorted_data[:top_k]:
             context += i['chunk'] + '\n'
     return context
 
+async def get_answer(user_input):
+    try:
+        loop = asyncio.get_event_loop()
+        start_time = time.time()
+        def create_message():
+            return {
+                "role": "user",
+                "content": f"context:\n\n{get_context(user_input, 3)}.\n\n Answer the following user query according to the above-given context:\nuser_input: {user_input}"
+            }
 
-def get_answer(user_input):
-    context = get_context(user_input, 3)
-    prompt = "context:\n\n{}.\n\n Answer the following user query according to above given context:\nuser_input: {}".format(
-        context, user_input)
-    myMessages = [{"role": "system",
-                   "content": 'Identity: You are Captain, a retired army captain known for your sharp wit and in-depth knowledge of "Call of Duty: Warzone," including game modes such as Search and Destroy and Zombies. Tone: Your communication is a blend of humor and authority. You keep interactions light-hearted but turn serious when discussing strategies. Knowledge Base: You possess extensive tactical knowledge of "Call of Duty" gameplay, history, and strategy. Response Style: Keep your responses under 150 characters—short, funny, and to the point, but always strategically sound. Engagement Style: You infuse humor into your commands and use wit to reduce tension, but remain clear and decisive when the situation calls for it. Example Responses: When suggesting a strategy for "Search and Destroy": "Silence is golden. Sneak up and boom!"Advising on team loadouts: "Pack a punch, not a picnic."Encouraging after a tough round: "We are planting wins next round, not bombs!"Continual Adaptation: Stay current with all updates and strategies in "Call of Duty: Warzone," ensuring your advice is top-notch. Use Case Scenarios: For strategizing in "Search and Destroy": "Cut the chatter, sharpen the focus. Let us dismantle their plans."Keeping morale up in Zombies: "Lets give those zombies something to moan about!"After a successful "Search and Destroy" match: "Exploded their strategy—and their base!"Remember, you are not just a strategist; you are the heart of the team, so keep morale high with your spirited humor and lead the team to victory with your seasoned expertise.'},
-                  {"role": "user",
-                   "content": "context:\n\n{}.\n\n Answer the following user query according to above given context:\nuser_input: {}".format(
-                       context, user_input)}]
-    response = openai.ChatCompletion.create(
-        model='gpt-3.5-turbo',
-        messages=myMessages,
-        max_tokens=None,
-        stream=False
-    )
-    return response['choices'][0]['message']['content']
+        my_messages = [
+            {"role": "system", "content": 'Identity: You are Captain, a retired army captain known for your sharp wit and in-depth knowledge of "Call of Duty: Warzone," including game modes such as Search and Destroy and Zombies. Tone: Your communication is a blend of humor and authority. You keep interactions light-hearted but turn serious when discussing strategies. Knowledge Base: You possess extensive tactical knowledge of "Call of Duty" gameplay, history, and strategy. Response Style: Keep your responses under 150 characters—short, funny, and to the point, but always strategically sound. Engagement Style: You infuse humor into your commands and use wit to reduce tension, but remain clear and decisive when the situation calls for it. Example Responses: When suggesting a strategy for "Search and Destroy": "Silence is golden. Sneak up and boom!"Advising on team loadouts: "Pack a punch, not a picnic."Encouraging after a tough round: "We are planting wins next round, not bombs!"Continual Adaptation: Stay current with all updates and strategies in "Call of Duty: Warzone," ensuring your advice is top-notch. Use Case Scenarios: For strategizing in "Search and Destroy": "Cut the chatter, sharpen the focus. Let us dismantle their plans."Keeping morale up in Zombies: "Lets give those zombies something to moan about!"After a successful "Search and Destroy" match: "Exploded their strategy—and their base!"Remember, you are not just a strategist; you are the heart of the team, so keep morale high with your spirited humor and lead the team to victory with your seasoned expertise.'},
+            create_message()
+        ]
+
+        # Rename the variable to avoid conflicts
+        response_data = await loop.run_in_executor(None, lambda: openai.ChatCompletion.create(
+            model='gpt-3.5-turbo',
+            messages=my_messages,
+            max_tokens=50,
+            stream=False
+        ))
+
+        end_time = time.time()
+        time_taken = end_time - start_time
+        print(f"It took {time_taken} seconds to generate a response")
+        return response_data['choices'][0]['message']['content']
+
+    except Exception as e:
+        print(f"Error in get_answer: {e}")
+        return {'response': 'Error in response generation'}
 
 
-def say(text):
-    global stop_speaking_flag
 
+
+
+
+async def say(text):
     CHUNK_SIZE = 1024
+    start_time = time.time()
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
 
     headers = {
@@ -88,12 +101,14 @@ def say(text):
         }
     }
 
-    response = requests.post(url, json=data, headers=headers, stream=True)
+    text_to_speak = requests.post(url, json=data, headers=headers, stream=True)
     with open('output.mp3', 'wb') as f:
-        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+        for chunk in text_to_speak.iter_content(chunk_size=CHUNK_SIZE):
             if chunk:
                 f.write(chunk)
-
+    end_time = time.time()
+    time_taken = end_time - start_time
+    print(f"The seconds taken to convert the response to audio is {time_taken}")
     pygame.mixer.init()  # Initialize the mixer module (without initializing the whole pygame)
     pygame.mixer.music.load('output.mp3')
     pygame.mixer.music.play()
@@ -102,10 +117,8 @@ def say(text):
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)  # Lower the tick value for lower CPU usage during the loop
     # Stop and quit the mixer
-
     pygame.mixer.music.stop()
     pygame.mixer.quit()
-    stop_speaking_flag = False
 
 
 def process_chunk(chunk_text):
@@ -209,14 +222,15 @@ def upload_file():
 
 
 @app.route('/process_audio', methods=['POST'])
-def process_audio():
+async def process_audio():
     try:
         data = request.get_json()
         audio_data = data.get('audio_data', '')
-        print(audio_data)
+        print(f"You said: {audio_data}")
         # Process the audio data (replace this with your actual processing logic)
-        response = get_answer(audio_data)
+        response = await get_answer(audio_data)
         print(response)
+        # await say(response)
         return jsonify({'response': response})
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -237,4 +251,4 @@ def run_script():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=3000)

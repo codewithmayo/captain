@@ -125,11 +125,10 @@ button {
         const uploadBtn = document.getElementById('uploadBtn');
         const uploadForm = document.getElementById('uploadForm');
         const responseContainer = document.getElementById('responseContainer');
-
         listenBtn.addEventListener('click', function () {
             console.log('Listening...');
 
-            const recognition = new webkitSpeechRecognition();
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             recognition.lang = 'en-US';
 
             recognition.onresult = function (event) {
@@ -140,20 +139,21 @@ button {
                 $.ajax({
                     url: '/process_audio',
                     type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ audio_data: transcript }),
+                    contentType: 'application/json',  // Set content type to JSON
+                    data: JSON.stringify({audio_data: transcript}),  // Send the transcript as the data
                     success: function (data) {
                         console.log(data);
                         // Display the server's response in the UI
+                        speakResponseWithElevenLabs(data.response)
                         responseContainer.innerHTML = `<p>Captain: ${data.response || 'No response'}</p>`;
 
-                        // Speak the response using the Web Speech API
-                        speakResponse(data.response);
                     },
                     error: function (error) {
                         console.error('Error:', error);
+
                     }
                 });
+
             };
 
             recognition.start();
@@ -176,11 +176,37 @@ button {
             xhr.send();
         }
 
-        function speakResponse(response) {
-            // Use the Web Speech API to speak the response
-            var msg = new SpeechSynthesisUtterance(response);
-            window.speechSynthesis.speak(msg);
+
+
+
+// Function to speak the response with Eleven Labs' text-to-speech API
+function speakResponseWithElevenLabs(response_text) {
+    const apiKey = "999d760d6e578b351ae7ecce1502ca18";
+    const voiceId = "g9QUiViwivXuQJ1v1OxI";
+
+    fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": apiKey,
+        },
+        body: JSON.stringify({ text: response_text }),
+    })
+    .then((response_text) => {
+        if (!response_text.ok) {
+            throw new Error("API request failed");
         }
+        return response_text.blob(); // Get the audio data as a Blob
+    })
+    .then((blob) => {
+        const audioUrl = URL.createObjectURL(blob);
+        const audioElement = new Audio(audioUrl);
+        audioElement.play();
+    })
+    .catch((error) => {
+        console.error("Error:", error);
+    });
+}
     });
 </script>
 </body>
